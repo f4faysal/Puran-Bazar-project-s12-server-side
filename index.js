@@ -107,16 +107,38 @@ async function run() {
     /**=======================================
                   get ptodats api 
       =======================================*/
-    app.get("/products/:name",  async (req, res) => {
+    app.get("/products/:name", verifyJWT, async (req, res) => {
       const category = req.params.name;
-      const query = { product_category_id : category};
-      console.log(category , query)
+      const query = { product_category_id: category };
+      console.log(category, query);
       // const tocken = req.headers.authorization;
-      const products = await productsCollection.find(query).toArray()
+      const products = await productsCollection.find(query).toArray();
       // console.log("varifay tokcen get", products);
       res.send(products);
     });
 
+    /**=======================================
+                  get ptodats api 
+      =======================================*/
+
+    app.post("/bookings", async (req, res) => {
+      const booking = req.body;
+      const query = {
+        bookingDate: booking.bookingDate,
+        email: booking.email,
+        description: booking.title,
+      };
+
+      console.log(query);
+      const alreadyBooked = await bookingsCollection.find(query).toArray();
+
+      if (alreadyBooked.length) {
+        const message = `You already have a booking on ${booking.appointmentDate}`;
+        return res.send({ acknowledged: false, message });
+      }
+      const result = await bookingsCollection.insertOne(booking);
+      res.send(result);
+    });
   } finally {
   }
 }

@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+var jwt = require("jsonwebtoken");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -19,28 +20,84 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
+/**=======================================
+                     verifyJWT
+  =====================================*/
+
+function verifyJWT(req, res, next) {
+  console.log("varifay", req.headers.authorization);
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send("unauthorized access");
+  }
+  const token = authHeader.split(" ")[1];
+  jwt.verify(
+    token,
+    "6ad8939f3e9b1f5d806482d70462ce4e8031b59bd793ef0fcef0b1f8c11154303580bf43437b9",
+    function (err, decoded) {
+      if (err) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      req.decoded = decoded;
+      next();
+    }
+  );
+}
+
 async function run() {
   try {
     /**=======================================
                      mongodb start 
       ======================================*/
     const categoryCollection = client.db("puranbazar").collection("category");
+    const usersCollection = client.db("puranbazar").collection("users");
     /**=======================================
                        mongodb End 
       ======================================*/
+
     //-------------------------------------------------------------------------------------
+    /**=======================================
+                Put USERS api 
+      =======================================*/
+    app.put("/user/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = req.body;
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: user,
+      };
+      const result = await usersCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      console.log("result ", result);
+      const token = jwt.sign(
+        user,
+        "6ad8939f3e9b1f5d806482d70462ce4e8031b59bd793ef0fcef0b1f8c11154303580bf43437b9",
+        {
+          expiresIn: "1d",
+        }
+      );
+      console.log("token ", token, user);
+      res.send({ result, token });
+    });
     /**=======================================
                 get api categories
       =======================================*/
     app.get("/categories", async (req, res) => {
       const query = {};
+      const tocken = req.headers.authorization;
+      console.log("varifay tokcen get", tocken);
       const cursor = categoryCollection.find(query);
       const categories = await cursor.toArray();
       res.send(categories);
     });
 
-    app.get("/categories/:slug", async (req, res) => {
+    app.get("/categories/:slug", verifyJWT, async (req, res) => {
       const slug = req.params.slug;
+
       console.log(slug);
       const query = { slug: slug };
       const categorie = await categoryCollection.findOne(query);

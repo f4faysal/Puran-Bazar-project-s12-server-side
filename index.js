@@ -51,6 +51,8 @@ async function run() {
       ======================================*/
     const categoryCollection = client.db("puranbazar").collection("category");
     const usersCollection = client.db("puranbazar").collection("users");
+    const bookingsCollection = client.db("puranbazar").collection("bookings");
+    const productsCollection = client.db("puranbazar").collection("products");
     /**=======================================
                        mongodb End 
       ======================================*/
@@ -80,7 +82,7 @@ async function run() {
           expiresIn: "1d",
         }
       );
-      console.log("token ", token, user);
+      // console.log("token ", token, user);
       res.send({ result, token });
     });
     /**=======================================
@@ -97,15 +99,24 @@ async function run() {
 
     app.get("/categories/:slug", verifyJWT, async (req, res) => {
       const slug = req.params.slug;
-
-      console.log(slug);
       const query = { slug: slug };
       const categorie = await categoryCollection.findOne(query);
       res.send(categorie);
     });
+
     /**=======================================
-                  Post service
+                  get ptodats api 
       =======================================*/
+    app.get("/products/:name",  async (req, res) => {
+      const category = req.params.name;
+      const query = { product_category_id : category};
+      console.log(category , query)
+      // const tocken = req.headers.authorization;
+      const products = await productsCollection.find(query).toArray()
+      // console.log("varifay tokcen get", products);
+      res.send(products);
+    });
+
   } finally {
   }
 }
@@ -116,4 +127,4 @@ app.get("/", async (req, res) => {
   res.send("Puran bazar server  is running ....");
 });
 
-app.listen(port, () => console.log(`Doctors portal running on ${port}`));
+app.listen(port, () => console.log(`Puran bazar running on ${port}`));

@@ -134,7 +134,7 @@ async function run() {
     app.get("/products/:name", verifyJWT, async (req, res) => {
       const category = req.params.name;
       const query = { product_category_id: category, status: "available" };
-      console.log(category, query);
+      // console.log(category, query);
       // const tocken = req.headers.authorization;
       const products = await productsCollection.find(query).toArray();
 
@@ -146,15 +146,12 @@ async function run() {
     /**=======================================
               get advatices ptodats api 
       =======================================*/
-
-    app.get("/products/advatices/email", async (req, res) => {
+    app.get("/advatices/:email", async (req, res) => {
       const email = req.params.email;
-      const query = { status: "available" , email};
-      console.log(category, query);
-      // const tocken = req.headers.authorization;
+      const query = { status: "available", seller: email };
+      // console.log(category, query);
       const products = await productsCollection.find(query).toArray();
       console.log(products);
-      // console.log("varifay tokcen get", products);
       res.send(products);
     });
     /**=======================================

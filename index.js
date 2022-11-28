@@ -118,6 +118,16 @@ async function run() {
     });
 
     /**=======================================
+                  POST ptodats api 
+      =======================================*/
+
+    app.post("/products", verifyJWT, async (req, res) => {
+      const addProduct = req.body;
+      const result = await productsCollection.insertOne(addProduct);
+      res.send(result);
+    });
+
+    /**=======================================
                   get ptodats api 
       =======================================*/
 
@@ -126,18 +136,29 @@ async function run() {
       const query = {
         bookingDate: booking.bookingDate,
         email: booking.email,
-        description: booking.title,
+        title: booking.title,
       };
 
       console.log(query);
       const alreadyBooked = await bookingsCollection.find(query).toArray();
 
       if (alreadyBooked.length) {
-        const message = `You already have a booking on ${booking.appointmentDate}`;
+        const message = `You have already booked ${booking.title}`;
         return res.send({ acknowledged: false, message });
       }
       const result = await bookingsCollection.insertOne(booking);
       res.send(result);
+    });
+
+    /**=======================================
+              Admin and Sellar ptodats api 
+      =======================================*/
+
+    app.get("/users/account-type/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      res.send({ isSeller: user?.accountType === "seller" });
     });
   } finally {
   }

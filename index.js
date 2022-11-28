@@ -19,9 +19,8 @@ const client = new MongoClient(uri, {
   useUnifiedTopology: true,
   serverApi: ServerApiVersion.v1,
 });
-
 /**=======================================
-                     verifyJWT
+                verifyJWT
   =====================================*/
 
 function verifyJWT(req, res, next) {
@@ -57,6 +56,32 @@ async function run() {
                        mongodb End 
       ======================================*/
 
+    /**=======================================
+               verifyAdmin
+  =====================================*/
+    const verifyAdmin = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const user = await usersCollection.findOne(query);
+
+      if (user?.role !== "admin") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+    /**=======================================
+               verifySeller
+  =====================================*/
+    const verifySeller = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const user = await usersCollection.findOne(query);
+
+      if (user?.accountType !== "seller") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
     //-------------------------------------------------------------------------------------
     /**=======================================
                 update a admin role
@@ -137,7 +162,6 @@ async function run() {
       // console.log(category, query);
       // const tocken = req.headers.authorization;
       const products = await productsCollection.find(query).toArray();
-
       // console.log(products);
       // console.log("varifay tokcen get", products);
       res.send(products);
@@ -146,7 +170,8 @@ async function run() {
     /**=======================================
               get advatices ptodats api 
       =======================================*/
-    app.get("/advatices/:email", async (req, res) => {
+
+    app.get("/advatices/:email", verifyJWT , async (req, res) => {
       const email = req.params.email;
       const query = { status: "available", seller: email };
       // console.log(category, query);
@@ -154,6 +179,7 @@ async function run() {
       console.log(products);
       res.send(products);
     });
+
     /**=======================================
                 get seller ptodats api 
       =======================================*/
@@ -187,7 +213,7 @@ async function run() {
     /**=======================================
               Delete seller ptodats api 
       =======================================*/
-    app.delete("/product/:id", verifyJWT, async (req, res) => {
+    app.delete("/product/:id", verifyJWT, verifySeller, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: ObjectId(id) };
       const result = await productsCollection.deleteOne(filter);
@@ -197,14 +223,14 @@ async function run() {
                   POST ptodats api 
       =======================================*/
 
-    app.post("/products", verifyJWT, async (req, res) => {
+    app.post("/products", verifyJWT, verifySeller, async (req, res) => {
       const addProduct = req.body;
       const result = await productsCollection.insertOne(addProduct);
       res.send(result);
     });
 
     /**=======================================
-                  get ptodats api 
+              bookings post ptodats api 
       =======================================*/
 
     app.post("/bookings", async (req, res) => {
@@ -227,7 +253,19 @@ async function run() {
     });
 
     /**=======================================
-              Admin and Sellar ptodats api 
+              bookings get ptodats api 
+      =======================================*/
+
+    app.get("/bookings/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const query = { email};
+      const sellerpodact = await bookingsCollection.find(query).toArray();
+      res.send(sellerpodact);
+
+    });
+
+    /**=======================================
+            Admin and Sellar ptodats api 
       =======================================*/
 
     app.get("/users/account-type/:email", async (req, res) => {
@@ -236,6 +274,7 @@ async function run() {
       const user = await usersCollection.findOne(query);
       res.send({ isSeller: user?.accountType === "seller" });
     });
+
     app.get("/users/account-admin/:email", async (req, res) => {
       const email = req.params.email;
       const query = { email };

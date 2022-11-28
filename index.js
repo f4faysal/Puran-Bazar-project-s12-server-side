@@ -59,6 +59,28 @@ async function run() {
 
     //-------------------------------------------------------------------------------------
     /**=======================================
+                update a admin role
+      =======================================*/
+
+    app.put("/users/admin/:email", async (req, res) => {
+      const email = req.params.email;
+      console.log(email);
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          role: "admin",
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc, options);
+      res.send(result);
+      
+      console.log(result );
+      
+    });
+
+
+    /**=======================================
                 Put USERS api 
       =======================================*/
     app.put("/user/:email", async (req, res) => {

@@ -72,13 +72,15 @@ async function run() {
           role: "admin",
         },
       };
-      const result = await usersCollection.updateOne(filter, updateDoc, options);
+      const result = await usersCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
       res.send(result);
-      
-      console.log(result );
-      
-    });
 
+      console.log(result);
+    });
 
     /**=======================================
                 Put USERS api 
@@ -131,14 +133,69 @@ async function run() {
       =======================================*/
     app.get("/products/:name", verifyJWT, async (req, res) => {
       const category = req.params.name;
-      const query = { product_category_id: category };
+      const query = { product_category_id: category, status: "available" };
       console.log(category, query);
       // const tocken = req.headers.authorization;
       const products = await productsCollection.find(query).toArray();
+
+      // console.log(products);
       // console.log("varifay tokcen get", products);
       res.send(products);
     });
 
+    /**=======================================
+              get advatices ptodats api 
+      =======================================*/
+
+    app.get("/products/advatices/email", async (req, res) => {
+      const email = req.params.email;
+      const query = { status: "available" , email};
+      console.log(category, query);
+      // const tocken = req.headers.authorization;
+      const products = await productsCollection.find(query).toArray();
+      console.log(products);
+      // console.log("varifay tokcen get", products);
+      res.send(products);
+    });
+    /**=======================================
+                get seller ptodats api 
+      =======================================*/
+    app.get("/product/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const query = { seller: email };
+      const sellerpodact = await productsCollection.find(query).toArray();
+      res.send(sellerpodact);
+    });
+    /**=======================================
+           put ptodats for delar seller api 
+      =======================================*/
+
+    app.put("/product/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: { status: "available" },
+      };
+      const result = await productsCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      // console.log("token ", token, user);
+      console.log(result);
+      res.send(result);
+    });
+
+    /**=======================================
+              Delete seller ptodats api 
+      =======================================*/
+    app.delete("/product/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const result = await productsCollection.deleteOne(filter);
+      res.send(result);
+    });
     /**=======================================
                   POST ptodats api 
       =======================================*/

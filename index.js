@@ -134,6 +134,31 @@ async function run() {
       // console.log("token ", token, user);
       res.send({ result, token });
     });
+
+    /**=======================================
+                get USERS api 
+      =======================================*/
+
+    app.get("/users/user", verifyJWT, verifyAdmin, async (req, res) => {
+      const query = { accountType: "user" };
+      const users = await usersCollection.find(query).toArray();
+      res.send(users);
+    });
+    app.get("/users/seller", verifyJWT, verifyAdmin, async (req, res) => {
+      const query = { accountType: "seller" };
+      const seller = await usersCollection.find(query).toArray();
+      res.send(seller);
+    });
+    //users/user
+     /**=======================================
+                Delet USERS api 
+      =======================================*/
+      app.delete("/users/user/:id", verifyJWT, verifyAdmin, async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: ObjectId(id) };
+        const result = await usersCollection.deleteOne(filter);
+        res.send(result);
+      });
     /**=======================================
                 get api categories
       =======================================*/
@@ -171,7 +196,7 @@ async function run() {
               get advatices ptodats api 
       =======================================*/
 
-    app.get("/advatices/:email", verifyJWT , async (req, res) => {
+    app.get("/advatices/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
       const query = { status: "available", seller: email };
       // console.log(category, query);
@@ -258,12 +283,19 @@ async function run() {
 
     app.get("/bookings/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
-      const query = { email};
+      const query = { email };
       const sellerpodact = await bookingsCollection.find(query).toArray();
       res.send(sellerpodact);
-
     });
-
+    /**=======================================
+      bookings Delete seller ptodats api 
+    =======================================*/
+    app.delete("/bookings/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const result = await bookingsCollection.deleteOne(filter);
+      res.send(result);
+    });
     /**=======================================
             Admin and Sellar ptodats api 
       =======================================*/

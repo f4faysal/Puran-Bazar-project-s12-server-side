@@ -30,17 +30,13 @@ function verifyJWT(req, res, next) {
     return res.status(401).send("unauthorized access");
   }
   const token = authHeader.split(" ")[1];
-  jwt.verify(
-    token,
-    "6ad8939f3e9b1f5d806482d70462ce4e8031b59bd793ef0fcef0b1f8c11154303580bf43437b9",
-    function (err, decoded) {
-      if (err) {
-        return res.status(403).send({ message: "forbidden access" });
-      }
-      req.decoded = decoded;
-      next();
+  jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+    if (err) {
+      return res.status(403).send({ message: "forbidden access" });
     }
-  );
+    req.decoded = decoded;
+    next();
+  });
 }
 
 async function run() {
@@ -107,6 +103,25 @@ async function run() {
       console.log(result);
     });
 
+    app.put("/user/active/:email", verifyJWT, verifyAdmin, async (req, res) => {
+      const email = req.params.email;
+      console.log(email);
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          status: "verify",
+        },
+      };
+      const result = await usersCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
+      console.log(result);
+    });
+
     /**=======================================
                 Put USERS api 
       =======================================*/
@@ -124,13 +139,9 @@ async function run() {
         options
       );
       console.log("result ", result);
-      const token = jwt.sign(
-        user,
-        "6ad8939f3e9b1f5d806482d70462ce4e8031b59bd793ef0fcef0b1f8c11154303580bf43437b9",
-        {
-          expiresIn: "1d",
-        }
-      );
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
+        expiresIn: "1d",
+      });
       // console.log("token ", token, user);
       res.send({ result, token });
     });
@@ -150,15 +161,26 @@ async function run() {
       res.send(seller);
     });
     //users/user
-     /**=======================================
+    /**=======================================
                 Delet USERS api 
       =======================================*/
-      app.delete("/users/user/:id", verifyJWT, verifyAdmin, async (req, res) => {
+    app.delete("/users/user/:id", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const result = await usersCollection.deleteOne(filter);
+      res.send(result);
+    });
+    app.delete(
+      "/users/seller/:id",
+      verifyJWT,
+      verifyAdmin,
+      async (req, res) => {
         const id = req.params.id;
         const filter = { _id: ObjectId(id) };
         const result = await usersCollection.deleteOne(filter);
         res.send(result);
-      });
+      }
+    );
     /**=======================================
                 get api categories
       =======================================*/

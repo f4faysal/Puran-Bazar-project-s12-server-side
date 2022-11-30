@@ -3,10 +3,12 @@ const cors = require("cors");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 var jwt = require("jsonwebtoken");
-
-const app = express();
 const port = process.env.PORT || 5000;
-
+// This is your test secret API key.
+const stripe = require("stripe")(
+  "sk_test_51M6ZsVJ6ltQ4sxjkVqkHGRqhw4WXKF89ZApamULhBZWrhPMTNOf1JHQdbpMjtrDSauPWkAVNC6P3aICAYvEln4sU00v0XLeHFK"
+);
+const app = express();
 // middlewares
 app.use(cors());
 app.use(express.json());
@@ -48,6 +50,7 @@ async function run() {
     const usersCollection = client.db("puranbazar").collection("users");
     const bookingsCollection = client.db("puranbazar").collection("bookings");
     const productsCollection = client.db("puranbazar").collection("products");
+    const paymentsCollection = client.db("puranbazar").collection("payments");
     /**=======================================
                        mongodb End 
       ======================================*/
@@ -316,6 +319,55 @@ async function run() {
       const id = req.params.id;
       const filter = { _id: ObjectId(id) };
       const result = await bookingsCollection.deleteOne(filter);
+      res.send(result);
+    });
+
+    /**=======================================
+            bookings Payment ptodats api 
+      =======================================*/
+
+    app.get("/bookings/pay/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const booking = await bookingsCollection.findOne(query);
+      res.send(booking);
+    });
+
+    /**=======================================
+             paymant ptodats api 
+  =======================================*/
+
+    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+      const booking = req.body;
+      const price = booking.sell_price;
+      const amount = price * 100;
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        currency: "usd",
+        amount: amount,
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    // --------paymant-----------
+    app.post("/payments", verifyJWT, async (req, res) => {
+      const payment = req.body;
+      const result = await paymentsCollection.insertOne(payment);
+      const id = payment.bookingId;
+      const filter = { _id: ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          paid: true,
+          payment_detals: payment,
+        },
+      };
+      const updatedResult = await bookingsCollection.updateOne(
+        filter,
+        updatedDoc
+      );
       res.send(result);
     });
     /**=======================================

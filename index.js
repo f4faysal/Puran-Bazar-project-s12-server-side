@@ -5,9 +5,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 var jwt = require("jsonwebtoken");
 const port = process.env.PORT || 5000;
 // This is your test secret API key.
-const stripe = require("stripe")(
-  "sk_test_51M6ZsVJ6ltQ4sxjkVqkHGRqhw4WXKF89ZApamULhBZWrhPMTNOf1JHQdbpMjtrDSauPWkAVNC6P3aICAYvEln4sU00v0XLeHFK"
-);
+const stripe = require("stripe")(process.env.SK_PAYMENT);
 const app = express();
 // middlewares
 app.use(cors());
@@ -163,6 +161,11 @@ async function run() {
       const seller = await usersCollection.find(query).toArray();
       res.send(seller);
     });
+    app.get("/users/seller/active", async (req, res) => {
+      const query = { accountType: "seller", status: "verify" };
+      const seller = await usersCollection.find(query).toArray();
+      res.send(seller);
+    });
     //users/user
     /**=======================================
                 Delet USERS api 
@@ -221,7 +224,7 @@ async function run() {
               get advatices ptodats api 
       =======================================*/
 
-    app.get("/advatices/:email", verifyJWT, async (req, res) => {
+    app.get("/advatices/:email", verifyJWT, verifySeller, async (req, res) => {
       const email = req.params.email;
       const query = { status: "available", seller: email };
       // console.log(category, query);
